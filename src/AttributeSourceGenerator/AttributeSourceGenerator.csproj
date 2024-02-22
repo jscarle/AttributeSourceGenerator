@@ -38,4 +38,18 @@
         <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+        <None Include="..\..\LICENSE.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+            <Visible>False</Visible>
+        </None>
+        <None Include="..\..\README.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+            <Visible>False</Visible>
+        </None>
+    </ItemGroup>
+
 </Project>
