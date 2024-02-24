@@ -1,26 +1,32 @@
-﻿namespace AttributeSourceGenerator;
+﻿// ReSharper disable CheckNamespace
+
+namespace AttributeSourceGenerator;
 
 /// <summary>Specifies the kind of filter.</summary>
+[Flags]
 public enum FilterType
 {
     /// <summary>Do not filter.</summary>
     None = 0,
 
-    /// <summary>Filter for interfaces only.</summary>
+    /// <summary>Only filter for attributes that are attached to interfaces.</summary>
     Interface = 1,
 
-    /// <summary>Filter for classes only.</summary>
+    /// <summary>Only filter for attributes that are attached to classes.</summary>
     Class = 2,
 
-    /// <summary>Filter for records only.</summary>
-    Record = 3,
+    /// <summary>Only filter for attributes that are attached to records.</summary>
+    Record = 4,
 
-    /// <summary>Filter for structs only.</summary>
-    Struct = 4,
+    /// <summary>Only filter for attributes that are attached to structs.</summary>
+    Struct = 8,
 
-    /// <summary>Filter for record structs only.</summary>
-    RecordStruct = 5,
+    /// <summary>Only filter for attributes that are attached to record structs.</summary>
+    RecordStruct = 16,
 
-    /// <summary>Filter for methods only.</summary>
-    Method = 6
+    /// <summary>Only filter for attributes that are attached to methods.</summary>
+    Method = 32,
+    
+    /// <summary>Filter for all supported attributes.</summary>
+    All = Interface | Class | Record | Struct | RecordStruct | Method
 }

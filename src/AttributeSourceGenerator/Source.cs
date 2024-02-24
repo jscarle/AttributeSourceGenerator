@@ -1,4 +1,6 @@
-﻿namespace AttributeSourceGenerator;
+﻿// ReSharper disable CheckNamespace
+
+namespace AttributeSourceGenerator;
 
 /// <summary>Represents source.</summary>
 public readonly record struct Source

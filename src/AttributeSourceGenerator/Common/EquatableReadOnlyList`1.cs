@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 
+// ReSharper disable CheckNamespace
+
 namespace AttributeSourceGenerator.Common;
 
 /// <summary>A read-only list that implements <see cref="IEquatable{T}" /> for value-based equality comparisons.</summary>
@@ -9,14 +11,15 @@ public readonly struct EquatableReadOnlyList<T> : IEquatable<EquatableReadOnlyLi
     /// <summary>Gets an empty <see cref="EquatableReadOnlyList{T}" />.</summary>
     public static EquatableReadOnlyList<T> Empty { get; } = new([]);
 
+    /// <summary>Gets the number of elements in the list.</summary>
+    public int Count => Collection.Count;
+
     /// <summary>Gets the element at the specified index.</summary>
     /// <param name="index">The index of the element to get.</param>
     /// <returns>The element at the specified index.</returns>
     public T this[int index] => Collection[index];
 
-    /// <summary>Gets the number of elements in the list.</summary>
-    public int Count => Collection.Count;
-
+    private IReadOnlyList<T> Collection => _collection ?? [];
     private readonly IReadOnlyList<T>? _collection;
 
     /// <summary>Creates a new <see cref="EquatableReadOnlyList{T}" /> from an existing <see cref="IReadOnlyList{T}" />.</summary>
@@ -25,8 +28,6 @@ public readonly struct EquatableReadOnlyList<T> : IEquatable<EquatableReadOnlyLi
     {
         _collection = collection;
     }
-
-    private IReadOnlyList<T> Collection => _collection ?? [];
 
     /// <summary>Determines whether this instance and another object are equal.</summary>
     /// <param name="other">The object to compare with this instance.</param>
@@ -68,7 +69,8 @@ public readonly struct EquatableReadOnlyList<T> : IEquatable<EquatableReadOnlyLi
     {
         var hashCode = new HashCode();
 
-        foreach (var item in Collection) hashCode.Add(item);
+        foreach (var item in Collection)
+            hashCode.Add(item);
 
         return hashCode.ToHashCode();
     }

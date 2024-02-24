@@ -5,121 +5,66 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+// ReSharper disable CheckNamespace
+
 namespace AttributeSourceGenerator;
 
 public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
 {
-    protected abstract string AttributeFullName { get; }
-    protected abstract string AttributeSource { get; }
+    protected abstract string AttributeFullyQualifiedName { get; }
+    protected virtual string AttributeSource => "";
     protected abstract FilterType AttributeFilter { get; }
-    protected abstract Func<Symbol, string> GenerateSourceForSymbol { get; }
+    protected abstract Func<Symbol, string> GenerateSource { get; }
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(AddSource);
+        context.RegisterPostInitializationOutput(initializationContext => AddSource(initializationContext, AttributeFullyQualifiedName, AttributeSource));
 
-        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(AttributeFullName, Filter, Transform);
+        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(AttributeFullyQualifiedName, (node, token) => Filter(node, AttributeFilter, token), Transform);
 
-        context.RegisterSourceOutput(pipeline, GenerateSource);
+        context.RegisterSourceOutput(pipeline, (productionContext, symbol) => GenerateSourceForSymbol(productionContext, symbol, GenerateSource));
     }
 
-    private void AddSource(IncrementalGeneratorPostInitializationContext ctx)
+    private static void AddSource(IncrementalGeneratorPostInitializationContext context, string name, string source)
     {
-        ctx.AddSource($"{AttributeFullName}.g.cs", SourceText.From(AttributeSource, Encoding.UTF8));
+        if (source.Length > 0)
+            context.AddSource($"{name}.g.cs", SourceText.From(source, Encoding.UTF8));
     }
 
-    private bool Filter(SyntaxNode syntaxNode, CancellationToken _)
+    private static bool Filter(SyntaxNode syntaxNode, FilterType filter, CancellationToken _)
     {
-        return AttributeFilter switch
-        {
-            FilterType.Interface => syntaxNode is InterfaceDeclarationSyntax,
-            FilterType.Class => syntaxNode is ClassDeclarationSyntax,
-            FilterType.Record => syntaxNode is RecordDeclarationSyntax syntax && syntax.Kind() == SyntaxKind.ClassDeclaration,
-            FilterType.Struct => syntaxNode is StructDeclarationSyntax,
-            FilterType.RecordStruct => syntaxNode is RecordDeclarationSyntax syntax && syntax.Kind() == SyntaxKind.StructDeclaration,
-            FilterType.Method => syntaxNode is MethodDeclarationSyntax,
-            _ => true,
-        };
+        if (filter.HasFlag(FilterType.Interface) && syntaxNode is InterfaceDeclarationSyntax)
+            return true;
+        if (filter.HasFlag(FilterType.Class) && syntaxNode is ClassDeclarationSyntax)
+            return true;
+        if (filter.HasFlag(FilterType.Record) && syntaxNode is RecordDeclarationSyntax recordDeclaration && recordDeclaration.Kind() == SyntaxKind.ClassDeclaration)
+            return true;
+        if (filter.HasFlag(FilterType.Struct) && syntaxNode is StructDeclarationSyntax)
+            return true;
+        if (filter.HasFlag(FilterType.RecordStruct) && syntaxNode is RecordDeclarationSyntax recordStructDeclaration && recordStructDeclaration.Kind() == SyntaxKind.StructDeclaration)
+            return true;
+        if (filter.HasFlag(FilterType.Method) && syntaxNode is MethodDeclarationSyntax)
+            return true;
+        return false;
     }
 
     private static Symbol Transform(GeneratorAttributeSyntaxContext context, CancellationToken _)
     {
-        var symbol = context.TargetSymbol;
-        var containingDeclarations = BuildHierarchy(symbol);
-        var symbolName = symbol.Name;
-        return new Symbol(symbolName, containingDeclarations);
+        if (context.TargetSymbol is not INamedTypeSymbol namedTypeSymbol)
+            throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly tried to transform a {nameof(context.TargetSymbol)} that was not an {nameof(INamedTypeSymbol)}.");
+        
+        var markerAttribute = context.GetMarkerAttribute();
+        var containingDeclarations = namedTypeSymbol.GetContainingDeclarations();
+        var symbolName = namedTypeSymbol.Name;
+        var genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters();
+        var symbol = new Symbol(markerAttribute, containingDeclarations, symbolName, genericTypeParameters);
+
+        return symbol;
     }
 
-    private void GenerateSource(SourceProductionContext context, Symbol symbol)
+    private static void GenerateSourceForSymbol(SourceProductionContext context, Symbol symbol, Func<Symbol, string> generate)
     {
-        var sourceText = GenerateSourceForSymbol(symbol);
-        context.AddSource($"{symbol.FullName}.g.cs", sourceText);
-    }
-
-    private static EquatableReadOnlyList<Declaration> BuildHierarchy(ISymbol symbol)
-    {
-        var declarations = new Stack<Declaration>();
-        BuildContainingSymbolHierarchy(symbol, in declarations);
-        return declarations.ToEquatableReadOnlyList();
-    }
-
-    private static void BuildContainingSymbolHierarchy(ISymbol symbol, in Stack<Declaration> declarations)
-    {
-        if (symbol.ContainingType is not null)
-            BuildTypeHierarchy(symbol.ContainingType, in declarations);
-        else if (symbol.ContainingNamespace is not null)
-            BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
-    }
-
-    private static void BuildTypeHierarchy(INamedTypeSymbol symbol, in Stack<Declaration> declarations)
-    {
-        DeclarationType? declarationType = null;
-
-
-        if (symbol.IsReferenceType)
-        {
-            if (symbol.TypeKind == TypeKind.Interface)
-                declarationType = DeclarationType.Interface;
-            else if (symbol.IsRecord)
-                declarationType = DeclarationType.Record;
-            else
-                declarationType = DeclarationType.Class;
-        }
-        else if (symbol.IsValueType)
-        {
-            if (symbol.IsRecord)
-                declarationType = DeclarationType.RecordStruct;
-            else
-                declarationType = DeclarationType.Struct;
-        }
-
-        if (declarationType is null)
-            return;
-
-        var genericParameters = EquatableReadOnlyList<string>.Empty;
-        if (symbol.IsGenericType)
-        {
-            var typeParameters = new List<string>();
-            foreach (var typeParameter in symbol.TypeParameters)
-                typeParameters.Add(typeParameter.Name);
-            genericParameters = new EquatableReadOnlyList<string>(typeParameters);
-        }
-
-        var typeDeclaration = new Declaration(declarationType.Value, symbol.Name, genericParameters);
-        declarations.Push(typeDeclaration);
-
-        BuildContainingSymbolHierarchy(symbol, declarations);
-    }
-
-    private static void BuildNamespaceHierarchy(INamespaceSymbol symbol, in Stack<Declaration> declarations)
-    {
-        if (!symbol.IsGlobalNamespace)
-        {
-            var namespaceDeclaration = new Declaration(DeclarationType.Namespace, symbol.Name, EquatableReadOnlyList<string>.Empty);
-            declarations.Push(namespaceDeclaration);
-        }
-
-        if (symbol.ContainingNamespace is not null && !symbol.ContainingNamespace.IsGlobalNamespace)
-            BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
+        var sourceText = generate(symbol);
+        context.AddSource($"{symbol.FullyQualifiedName}.g.cs", sourceText);
     }
 }

@@ -1,5 +1,7 @@
 ﻿using AttributeSourceGenerator.Common;
 
+// ReSharper disable CheckNamespace
+
 namespace AttributeSourceGenerator;
 
 /// <summary>Represents a declaration with information about its type, name, and generic parameters.</summary>
