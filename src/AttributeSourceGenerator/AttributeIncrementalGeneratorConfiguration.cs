@@ -12,7 +12,7 @@ public sealed class AttributeIncrementalGeneratorConfiguration
     public string? AttributeSource { get; init; }
 
     /// <summary>The filter to apply to symbols.</summary>
-    public required FilterType SymbolFilter { get; init; }
+    public FilterType SymbolFilter { get; init; } = FilterType.All;
 
     /// <summary>The function that generates the source code for the attribute.</summary>
     public required Func<Symbol, string> SourceGenerator { get; init; }

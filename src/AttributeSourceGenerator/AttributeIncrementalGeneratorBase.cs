@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using AttributeSourceGenerator.Common;
+using AttributeSourceGenerator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -54,10 +55,12 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
 
     /// <summary>Determines whether a syntax node should be included based on the filter settings.</summary>
     /// <param name="syntaxNode">The syntax node to filter.</param>
-    /// <param name="filter">The filter configuration.</param>
+    /// <param name="filterType">The filter configuration.</param>
     /// <returns><see langword="true" /> if the syntax node should be included, otherwise <see langword="false" />.</returns>
-    private static bool Filter(SyntaxNode syntaxNode, FilterType filter)
+    private static bool Filter(SyntaxNode syntaxNode, FilterType filterType)
     {
+        var filter = filterType == FilterType.None ? FilterType.All : filterType;
+
         if (filter.HasFlag(FilterType.Interface) && syntaxNode is InterfaceDeclarationSyntax)
             return true;
         if (filter.HasFlag(FilterType.Class) && syntaxNode is ClassDeclarationSyntax)
@@ -70,6 +73,7 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
             return true;
         if (filter.HasFlag(FilterType.Method) && syntaxNode is MethodDeclarationSyntax)
             return true;
+
         return false;
     }
 
@@ -78,15 +82,37 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     /// <returns>The transformed symbol.</returns>
     private static Symbol Transform(GeneratorAttributeSyntaxContext context)
     {
-        if (context.TargetSymbol is not INamedTypeSymbol namedTypeSymbol)
-            throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly tried to transform a {nameof(context.TargetSymbol)} that was not an {nameof(INamedTypeSymbol)}.");
+        var targetSymbol = context.TargetSymbol;
+        if (targetSymbol is not INamedTypeSymbol && targetSymbol is not IMethodSymbol)
+            throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly tried to transform a {nameof(context.TargetSymbol)} that was not an {nameof(INamedTypeSymbol)} or a {nameof(IMethodSymbol)}.");
 
         var markerAttribute = context.GetMarkerAttribute();
-        var containingDeclarations = namedTypeSymbol.GetContainingDeclarations();
-        var symbolType = namedTypeSymbol.GetSymbolType();
-        var symbolName = namedTypeSymbol.Name;
-        var genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters();
-        var symbol = new Symbol(markerAttribute, containingDeclarations, symbolType, symbolName, genericTypeParameters);
+        var containingDeclarations = targetSymbol.GetContainingDeclarations();
+        var symbolType = targetSymbol.GetSymbolType();
+        var symbolName = targetSymbol.Name;
+        EquatableReadOnlyList<string> genericTypeParameters;
+        EquatableReadOnlyList<ConstructorParameter> constructorParameters;
+        string returnType;
+        switch (targetSymbol)
+        {
+            case INamedTypeSymbol namedTypeSymbol:
+                genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters();
+                constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
+                returnType = "";
+                break;
+            case IMethodSymbol methodSymbol:
+                genericTypeParameters = methodSymbol.GetGenericTypeParameters();
+                constructorParameters = methodSymbol.GetConstructorParameters();
+                returnType = methodSymbol.ReturnType.ToDisplayString();
+                break;
+            default:
+                genericTypeParameters = EquatableReadOnlyList<string>.Empty;
+                constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
+                returnType = "";
+                break;
+        }
+
+        var symbol = new Symbol(markerAttribute, containingDeclarations, symbolType, symbolName, genericTypeParameters, constructorParameters, returnType);
 
         return symbol;
     }

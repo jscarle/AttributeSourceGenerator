@@ -9,7 +9,7 @@ namespace AttributeSourceGenerator.Common;
 public readonly struct EquatableReadOnlyList<T> : IEquatable<EquatableReadOnlyList<T>>, IReadOnlyList<T>
 {
     /// <summary>Gets an empty <see cref="EquatableReadOnlyList{T}" />.</summary>
-    public static EquatableReadOnlyList<T> Empty { get; } = new([]);
+    internal static EquatableReadOnlyList<T> Empty { get; } = new([]);
 
     /// <summary>Gets the number of elements in the list.</summary>
     public int Count => Collection.Count;

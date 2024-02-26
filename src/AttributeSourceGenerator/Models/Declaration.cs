@@ -2,7 +2,7 @@
 
 // ReSharper disable CheckNamespace
 
-namespace AttributeSourceGenerator;
+namespace AttributeSourceGenerator.Models;
 
 /// <summary>Represents a declaration.</summary>
 public readonly record struct Declaration

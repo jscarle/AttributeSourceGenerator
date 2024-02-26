@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using AttributeSourceGenerator.Models;
 
 // ReSharper disable CheckNamespace
 

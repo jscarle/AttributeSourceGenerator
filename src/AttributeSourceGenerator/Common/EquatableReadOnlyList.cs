@@ -3,7 +3,7 @@
 namespace AttributeSourceGenerator.Common;
 
 /// <summary>Provides extension methods to convert various collections to an <see cref="EquatableReadOnlyList{T}" />.</summary>
-public static class EquatableReadOnlyList
+internal static class EquatableReadOnlyList
 {
     /// <summary>Converts an <see cref="IReadOnlyList{T}" /> to an <see cref="EquatableReadOnlyList{T}" />.</summary>
     /// <param name="list">The <see cref="IReadOnlyList{T}" /> to convert.</param>

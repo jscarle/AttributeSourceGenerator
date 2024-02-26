@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using AttributeSourceGenerator.Models;
+using Microsoft.CodeAnalysis;
 
 // ReSharper disable CheckNamespace
 
@@ -31,7 +32,7 @@ internal static class SymbolExtensions
             case IMethodSymbol:
                 return SymbolType.Method;
             default:
-                return SymbolType.Unknown;
+                throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly received an {nameof(ISymbol)} that was unsupported.");
         }
     }
 
@@ -52,9 +53,29 @@ internal static class SymbolExtensions
     /// <param name="declarations">A <see cref="Stack{T}" /> of <see cref="Declaration" /> objects to store the hierarchy.</param>
     private static void BuildContainingSymbolHierarchy(ISymbol symbol, in Stack<Declaration> declarations)
     {
-        if (symbol.ContainingType is not null)
-            BuildTypeHierarchy(symbol.ContainingType, in declarations);
-        else if (symbol.ContainingNamespace is not null)
+        switch (symbol.ContainingSymbol)
+        {
+            case INamespaceSymbol namespaceSymbol:
+                BuildNamespaceHierarchy(namespaceSymbol, declarations);
+                break;
+            case INamedTypeSymbol namedTypeSymbol:
+                BuildTypeHierarchy(namedTypeSymbol, in declarations);
+                break;
+        }
+    }
+
+    /// <summary>Builds the hierarchy of containing namespaces starting from the given namespace symbol.</summary>
+    /// <param name="symbol">The <see cref="INamespaceSymbol" /> to start building the hierarchy from.</param>
+    /// <param name="declarations">A <see cref="Stack{T}" /> of <see cref="Declaration" /> objects to store the hierarchy.</param>
+    private static void BuildNamespaceHierarchy(INamespaceSymbol symbol, in Stack<Declaration> declarations)
+    {
+        if (!symbol.IsGlobalNamespace)
+        {
+            var namespaceDeclaration = new Declaration(DeclarationType.Namespace, symbol.Name, EquatableReadOnlyList<string>.Empty);
+            declarations.Push(namespaceDeclaration);
+        }
+
+        if (symbol.ContainingNamespace is not null && !symbol.ContainingNamespace.IsGlobalNamespace)
             BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
     }
 
@@ -73,20 +94,5 @@ internal static class SymbolExtensions
         declarations.Push(typeDeclaration);
 
         BuildContainingSymbolHierarchy(symbol, declarations);
-    }
-
-    /// <summary>Builds the hierarchy of containing namespaces starting from the given namespace symbol.</summary>
-    /// <param name="symbol">The <see cref="INamespaceSymbol" /> to start building the hierarchy from.</param>
-    /// <param name="declarations">A <see cref="Stack{T}" /> of <see cref="Declaration" /> objects to store the hierarchy.</param>
-    private static void BuildNamespaceHierarchy(INamespaceSymbol symbol, in Stack<Declaration> declarations)
-    {
-        if (!symbol.IsGlobalNamespace)
-        {
-            var namespaceDeclaration = new Declaration(DeclarationType.Namespace, symbol.Name, EquatableReadOnlyList<string>.Empty);
-            declarations.Push(namespaceDeclaration);
-        }
-
-        if (symbol.ContainingNamespace is not null && !symbol.ContainingNamespace.IsGlobalNamespace)
-            BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
     }
 }
