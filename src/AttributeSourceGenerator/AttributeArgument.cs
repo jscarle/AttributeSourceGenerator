@@ -6,7 +6,7 @@ namespace AttributeSourceGenerator;
 public readonly record struct AttributeArgument
 {
     /// <summary>Gets the type of argument.</summary>
-    public AttributeArgumentType Type { get; }
+    public AttributeArgumentType ArgumentType { get; }
 
     /// <summary>Gets the name of the argument.</summary>
     public string Name { get; }
@@ -15,12 +15,12 @@ public readonly record struct AttributeArgument
     public string? Value { get; }
 
     /// <summary>Initializes a new instance of the <see cref="AttributeArgument" /> record with the specified type, name, and value.</summary>
-    /// <param name="type">The type of argument.</param>
+    /// <param name="argumentType">The type of argument.</param>
     /// <param name="name">The name of the argument.</param>
     /// <param name="value">The value of the argument.</param>
-    internal AttributeArgument(AttributeArgumentType type, string name, string? value)
+    internal AttributeArgument(AttributeArgumentType argumentType, string name, string? value)
     {
-        Type = type;
+        ArgumentType = argumentType;
         Name = name;
         Value = value;
     }

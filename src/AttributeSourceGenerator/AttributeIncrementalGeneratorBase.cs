@@ -83,9 +83,10 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
 
         var markerAttribute = context.GetMarkerAttribute();
         var containingDeclarations = namedTypeSymbol.GetContainingDeclarations();
+        var symbolType = namedTypeSymbol.GetSymbolType();
         var symbolName = namedTypeSymbol.Name;
         var genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters();
-        var symbol = new Symbol(markerAttribute, containingDeclarations, symbolName, genericTypeParameters);
+        var symbol = new Symbol(markerAttribute, containingDeclarations, symbolType, symbolName, genericTypeParameters);
 
         return symbol;
     }

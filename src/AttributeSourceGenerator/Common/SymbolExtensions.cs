@@ -7,6 +7,34 @@ namespace AttributeSourceGenerator.Common;
 /// <summary>Provides extension methods for working with symbols.</summary>
 internal static class SymbolExtensions
 {
+    /// <summary>Gets the <see cref="SymbolType" /> for the given <see cref="ISymbol" /> based on its type kind.</summary>
+    /// <param name="symbol">The <see cref="ISymbol" /> to get the <see cref="SymbolType" /> for.</param>
+    /// <returns>A <see cref="SymbolType" /> if the symbol can be mapped to a symbol type, otherwise null.</returns>
+    public static SymbolType GetSymbolType(this ISymbol symbol)
+    {
+        switch (symbol)
+        {
+            case ITypeSymbol { IsReferenceType: true } typeSymbol:
+            {
+                if (typeSymbol.TypeKind == TypeKind.Interface)
+                    return SymbolType.Interface;
+                if (typeSymbol.IsRecord)
+                    return SymbolType.Record;
+                return SymbolType.Class;
+            }
+            case ITypeSymbol { IsValueType: true } typeSymbol:
+            {
+                if (typeSymbol.IsRecord)
+                    return SymbolType.RecordStruct;
+                return SymbolType.Struct;
+            }
+            case IMethodSymbol:
+                return SymbolType.Method;
+            default:
+                return SymbolType.Unknown;
+        }
+    }
+
     /// <summary>Gets a list of declarations representing the hierarchy containing the given symbol.</summary>
     /// <param name="symbol">The <see cref="ISymbol" /> to get the containing declarations for.</param>
     /// <returns>An <see cref="EquatableReadOnlyList{T}" /> of <see cref="Declaration" /> objects representing the hierarchy.</returns>
@@ -45,30 +73,6 @@ internal static class SymbolExtensions
         declarations.Push(typeDeclaration);
 
         BuildContainingSymbolHierarchy(symbol, declarations);
-    }
-
-    /// <summary>Gets the <see cref="DeclarationType" /> for the given <see cref="ITypeSymbol" /> based on its type kind.</summary>
-    /// <param name="symbol">The <see cref="ITypeSymbol" /> to get the <see cref="DeclarationType" /> for.</param>
-    /// <returns>A <see cref="DeclarationType" /> if the symbol can be mapped to a declaration type, otherwise null.</returns>
-    private static DeclarationType? GetDeclarationType(this ITypeSymbol symbol)
-    {
-        if (symbol.IsReferenceType)
-        {
-            if (symbol.TypeKind == TypeKind.Interface)
-                return DeclarationType.Interface;
-            if (symbol.IsRecord)
-                return DeclarationType.Record;
-            return DeclarationType.Class;
-        }
-
-        if (symbol.IsValueType)
-        {
-            if (symbol.IsRecord)
-                return DeclarationType.RecordStruct;
-            return DeclarationType.Struct;
-        }
-
-        return null;
     }
 
     /// <summary>Builds the hierarchy of containing namespaces starting from the given namespace symbol.</summary>
