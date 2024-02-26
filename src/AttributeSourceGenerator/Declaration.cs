@@ -4,7 +4,7 @@
 
 namespace AttributeSourceGenerator;
 
-/// <summary>Represents a declaration with information about its type, name, and generic parameters.</summary>
+/// <summary>Represents a declaration.</summary>
 public readonly record struct Declaration
 {
     /// <summary>Gets the type of declaration.</summary>

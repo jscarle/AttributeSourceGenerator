@@ -4,8 +4,12 @@
 
 namespace AttributeSourceGenerator.Common;
 
+/// <summary>Provides extension methods for working with symbols.</summary>
 internal static class SymbolExtensions
 {
+    /// <summary>Gets a list of declarations representing the hierarchy containing the given symbol.</summary>
+    /// <param name="symbol">The <see cref="ISymbol" /> to get the containing declarations for.</param>
+    /// <returns>An <see cref="EquatableReadOnlyList{T}" /> of <see cref="Declaration" /> objects representing the hierarchy.</returns>
     public static EquatableReadOnlyList<Declaration> GetContainingDeclarations(this ISymbol symbol)
     {
         var declarations = new Stack<Declaration>();
@@ -15,6 +19,9 @@ internal static class SymbolExtensions
         return declarations.ToEquatableReadOnlyList();
     }
 
+    /// <summary>Builds the hierarchy of containing symbols starting from the given symbol.</summary>
+    /// <param name="symbol">The <see cref="ISymbol" /> to start building the hierarchy from.</param>
+    /// <param name="declarations">A <see cref="Stack{T}" /> of <see cref="Declaration" /> objects to store the hierarchy.</param>
     private static void BuildContainingSymbolHierarchy(ISymbol symbol, in Stack<Declaration> declarations)
     {
         if (symbol.ContainingType is not null)
@@ -23,6 +30,9 @@ internal static class SymbolExtensions
             BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
     }
 
+    /// <summary>Builds the hierarchy of containing types starting from the given type symbol.</summary>
+    /// <param name="symbol">The <see cref="INamedTypeSymbol" /> to start building the hierarchy from.</param>
+    /// <param name="declarations">A <see cref="Stack{T}" /> of <see cref="Declaration" /> objects to store the hierarchy.</param>
     private static void BuildTypeHierarchy(INamedTypeSymbol symbol, in Stack<Declaration> declarations)
     {
         var declarationType = symbol.GetDeclarationType();
@@ -37,6 +47,9 @@ internal static class SymbolExtensions
         BuildContainingSymbolHierarchy(symbol, declarations);
     }
 
+    /// <summary>Gets the <see cref="DeclarationType" /> for the given <see cref="ITypeSymbol" /> based on its type kind.</summary>
+    /// <param name="symbol">The <see cref="ITypeSymbol" /> to get the <see cref="DeclarationType" /> for.</param>
+    /// <returns>A <see cref="DeclarationType" /> if the symbol can be mapped to a declaration type, otherwise null.</returns>
     private static DeclarationType? GetDeclarationType(this ITypeSymbol symbol)
     {
         if (symbol.IsReferenceType)
@@ -58,6 +71,9 @@ internal static class SymbolExtensions
         return null;
     }
 
+    /// <summary>Builds the hierarchy of containing namespaces starting from the given namespace symbol.</summary>
+    /// <param name="symbol">The <see cref="INamespaceSymbol" /> to start building the hierarchy from.</param>
+    /// <param name="declarations">A <see cref="Stack{T}" /> of <see cref="Declaration" /> objects to store the hierarchy.</param>
     private static void BuildNamespaceHierarchy(INamespaceSymbol symbol, in Stack<Declaration> declarations)
     {
         if (!symbol.IsGlobalNamespace)
