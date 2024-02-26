@@ -1,7 +1,5 @@
 ﻿using System.Collections;
 
-// ReSharper disable CheckNamespace
-
 namespace AttributeSourceGenerator.Common;
 
 /// <summary>A read-only list that implements <see cref="IEquatable{T}" /> for value-based equality comparisons.</summary>

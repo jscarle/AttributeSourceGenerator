@@ -1,7 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
 
-// ReSharper disable CheckNamespace
-
 namespace AttributeSourceGenerator.Common;
 
 /// <summary>Provides extension methods for working with type symbols.</summary>

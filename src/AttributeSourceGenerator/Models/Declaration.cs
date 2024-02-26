@@ -1,7 +1,5 @@
 ﻿using AttributeSourceGenerator.Common;
 
-// ReSharper disable CheckNamespace
-
 namespace AttributeSourceGenerator.Models;
 
 /// <summary>Represents a declaration.</summary>

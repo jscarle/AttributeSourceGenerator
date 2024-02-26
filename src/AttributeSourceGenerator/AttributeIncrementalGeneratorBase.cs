@@ -6,8 +6,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-// ReSharper disable CheckNamespace
-
 namespace AttributeSourceGenerator;
 
 /// <summary>Provides a base class for incremental source generators that generate source using marker attributes.</summary>
