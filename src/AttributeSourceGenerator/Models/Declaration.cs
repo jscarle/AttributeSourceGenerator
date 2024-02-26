@@ -1,8 +1,10 @@
 ﻿using AttributeSourceGenerator.Common;
 
-namespace AttributeSourceGenerator;
+// ReSharper disable CheckNamespace
 
-/// <summary>Represents a declaration with information about its type, name, and generic parameters.</summary>
+namespace AttributeSourceGenerator.Models;
+
+/// <summary>Represents a declaration.</summary>
 public readonly record struct Declaration
 {
     /// <summary>Gets the type of declaration.</summary>

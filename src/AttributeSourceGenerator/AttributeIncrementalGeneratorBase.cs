@@ -1,125 +1,129 @@
 ﻿using System.Text;
 using AttributeSourceGenerator.Common;
+using AttributeSourceGenerator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+// ReSharper disable CheckNamespace
+
 namespace AttributeSourceGenerator;
 
+/// <summary>Provides a base class for incremental source generators that generate source using marker attributes.</summary>
 public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
 {
-    protected abstract string AttributeFullName { get; }
-    protected abstract string AttributeSource { get; }
-    protected abstract FilterType AttributeFilter { get; }
-    protected abstract Func<Symbol, string> GenerateSourceForSymbol { get; }
+    private readonly AttributeIncrementalGeneratorConfiguration _configuration;
 
+    /// <summary>Initializes a new instance of the <see cref="AttributeIncrementalGeneratorBase" /> class with the given configuration initializer.</summary>
+    /// <param name="configuration">The configuration for the generator.</param>
+    protected AttributeIncrementalGeneratorBase(AttributeIncrementalGeneratorConfiguration configuration)
+    {
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="AttributeIncrementalGeneratorBase" /> class with the given configuration initializer.</summary>
+    /// <param name="initializer">A function that provides the configuration for the generator.</param>
+    protected AttributeIncrementalGeneratorBase(Func<AttributeIncrementalGeneratorConfiguration> initializer)
+    {
+        if (initializer is null)
+            throw new ArgumentNullException(nameof(initializer));
+
+        _configuration = initializer();
+    }
+
+    /// <summary>Initializes the incremental generator.</summary>
+    /// <param name="context">The initialization context.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(AddSource);
+        context.RegisterPostInitializationOutput(initializationContext => AddSource(initializationContext, _configuration.AttributeFullyQualifiedName, _configuration.AttributeSource));
 
-        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(AttributeFullName, Filter, Transform);
+        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.AttributeFullyQualifiedName, (syntaxNode, _) => Filter(syntaxNode, _configuration.SymbolFilter), (syntaxContext, _) => Transform(syntaxContext));
 
-        context.RegisterSourceOutput(pipeline, GenerateSource);
+        context.RegisterSourceOutput(pipeline, (productionContext, symbol) => GenerateSourceForSymbol(productionContext, symbol, _configuration.SourceGenerator));
     }
 
-    private void AddSource(IncrementalGeneratorPostInitializationContext ctx)
+    /// <summary>Adds a source file to the output.</summary>
+    /// <param name="context">The post-initialization context.</param>
+    /// <param name="name">The name of the source file.</param>
+    /// <param name="source">The source code for the file.</param>
+    private static void AddSource(IncrementalGeneratorPostInitializationContext context, string name, string? source)
     {
-        ctx.AddSource($"{AttributeFullName}.g.cs", SourceText.From(AttributeSource, Encoding.UTF8));
+        if (source?.Length > 0)
+            context.AddSource($"{name}.g.cs", SourceText.From(source, Encoding.UTF8));
     }
 
-    private bool Filter(SyntaxNode syntaxNode, CancellationToken _)
+    /// <summary>Determines whether a syntax node should be included based on the filter settings.</summary>
+    /// <param name="syntaxNode">The syntax node to filter.</param>
+    /// <param name="filterType">The filter configuration.</param>
+    /// <returns><see langword="true" /> if the syntax node should be included, otherwise <see langword="false" />.</returns>
+    private static bool Filter(SyntaxNode syntaxNode, FilterType filterType)
     {
-        return AttributeFilter switch
+        var filter = filterType == FilterType.None ? FilterType.All : filterType;
+
+        if (filter.HasFlag(FilterType.Interface) && syntaxNode is InterfaceDeclarationSyntax)
+            return true;
+        if (filter.HasFlag(FilterType.Class) && syntaxNode is ClassDeclarationSyntax)
+            return true;
+        if (filter.HasFlag(FilterType.Record) && syntaxNode is RecordDeclarationSyntax recordDeclaration && recordDeclaration.Kind() == SyntaxKind.ClassDeclaration)
+            return true;
+        if (filter.HasFlag(FilterType.Struct) && syntaxNode is StructDeclarationSyntax)
+            return true;
+        if (filter.HasFlag(FilterType.RecordStruct) && syntaxNode is RecordDeclarationSyntax recordStructDeclaration && recordStructDeclaration.Kind() == SyntaxKind.StructDeclaration)
+            return true;
+        if (filter.HasFlag(FilterType.Method) && syntaxNode is MethodDeclarationSyntax)
+            return true;
+
+        return false;
+    }
+
+    /// <summary>Transforms a generator attribute syntax context into a symbol for source generation.</summary>
+    /// <param name="context">The generator attribute syntax context.</param>
+    /// <returns>The transformed symbol.</returns>
+    private static Symbol Transform(GeneratorAttributeSyntaxContext context)
+    {
+        var targetSymbol = context.TargetSymbol;
+        if (targetSymbol is not INamedTypeSymbol && targetSymbol is not IMethodSymbol)
+            throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly tried to transform a {nameof(context.TargetSymbol)} that was not an {nameof(INamedTypeSymbol)} or a {nameof(IMethodSymbol)}.");
+
+        var markerAttribute = context.GetMarkerAttribute();
+        var containingDeclarations = targetSymbol.GetContainingDeclarations();
+        var symbolType = targetSymbol.GetSymbolType();
+        var symbolName = targetSymbol.Name;
+        EquatableReadOnlyList<string> genericTypeParameters;
+        EquatableReadOnlyList<ConstructorParameter> constructorParameters;
+        string returnType;
+        switch (targetSymbol)
         {
-            FilterType.Interface => syntaxNode is InterfaceDeclarationSyntax,
-            FilterType.Class => syntaxNode is ClassDeclarationSyntax,
-            FilterType.Record => syntaxNode is RecordDeclarationSyntax syntax && syntax.Kind() == SyntaxKind.ClassDeclaration,
-            FilterType.Struct => syntaxNode is StructDeclarationSyntax,
-            FilterType.RecordStruct => syntaxNode is RecordDeclarationSyntax syntax && syntax.Kind() == SyntaxKind.StructDeclaration,
-            FilterType.Method => syntaxNode is MethodDeclarationSyntax,
-            _ => true,
-        };
-    }
-
-    private static Symbol Transform(GeneratorAttributeSyntaxContext context, CancellationToken _)
-    {
-        var symbol = context.TargetSymbol;
-        var containingDeclarations = BuildHierarchy(symbol);
-        var symbolName = symbol.Name;
-        return new Symbol(symbolName, containingDeclarations);
-    }
-
-    private void GenerateSource(SourceProductionContext context, Symbol symbol)
-    {
-        var sourceText = GenerateSourceForSymbol(symbol);
-        context.AddSource($"{symbol.FullName}.g.cs", sourceText);
-    }
-
-    private static EquatableReadOnlyList<Declaration> BuildHierarchy(ISymbol symbol)
-    {
-        var declarations = new Stack<Declaration>();
-        BuildContainingSymbolHierarchy(symbol, in declarations);
-        return declarations.ToEquatableReadOnlyList();
-    }
-
-    private static void BuildContainingSymbolHierarchy(ISymbol symbol, in Stack<Declaration> declarations)
-    {
-        if (symbol.ContainingType is not null)
-            BuildTypeHierarchy(symbol.ContainingType, in declarations);
-        else if (symbol.ContainingNamespace is not null)
-            BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
-    }
-
-    private static void BuildTypeHierarchy(INamedTypeSymbol symbol, in Stack<Declaration> declarations)
-    {
-        DeclarationType? declarationType = null;
-
-
-        if (symbol.IsReferenceType)
-        {
-            if (symbol.TypeKind == TypeKind.Interface)
-                declarationType = DeclarationType.Interface;
-            else if (symbol.IsRecord)
-                declarationType = DeclarationType.Record;
-            else
-                declarationType = DeclarationType.Class;
-        }
-        else if (symbol.IsValueType)
-        {
-            if (symbol.IsRecord)
-                declarationType = DeclarationType.RecordStruct;
-            else
-                declarationType = DeclarationType.Struct;
-        }
-
-        if (declarationType is null)
-            return;
-
-        var genericParameters = EquatableReadOnlyList<string>.Empty;
-        if (symbol.IsGenericType)
-        {
-            var typeParameters = new List<string>();
-            foreach (var typeParameter in symbol.TypeParameters)
-                typeParameters.Add(typeParameter.Name);
-            genericParameters = new EquatableReadOnlyList<string>(typeParameters);
+            case INamedTypeSymbol namedTypeSymbol:
+                genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters();
+                constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
+                returnType = "";
+                break;
+            case IMethodSymbol methodSymbol:
+                genericTypeParameters = methodSymbol.GetGenericTypeParameters();
+                constructorParameters = methodSymbol.GetConstructorParameters();
+                returnType = methodSymbol.ReturnType.ToDisplayString();
+                break;
+            default:
+                genericTypeParameters = EquatableReadOnlyList<string>.Empty;
+                constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
+                returnType = "";
+                break;
         }
 
-        var typeDeclaration = new Declaration(declarationType.Value, symbol.Name, genericParameters);
-        declarations.Push(typeDeclaration);
+        var symbol = new Symbol(markerAttribute, containingDeclarations, symbolType, symbolName, genericTypeParameters, constructorParameters, returnType);
 
-        BuildContainingSymbolHierarchy(symbol, declarations);
+        return symbol;
     }
 
-    private static void BuildNamespaceHierarchy(INamespaceSymbol symbol, in Stack<Declaration> declarations)
+    /// <summary>Generates source code for a given symbol.</summary>
+    /// <param name="context">The source production context.</param>
+    /// <param name="symbol">The symbol to generate source for.</param>
+    /// <param name="generate">A function that generates the source code for a symbol.</param>
+    private static void GenerateSourceForSymbol(SourceProductionContext context, Symbol symbol, Func<Symbol, string> generate)
     {
-        if (!symbol.IsGlobalNamespace)
-        {
-            var namespaceDeclaration = new Declaration(DeclarationType.Namespace, symbol.Name, EquatableReadOnlyList<string>.Empty);
-            declarations.Push(namespaceDeclaration);
-        }
-
-        if (symbol.ContainingNamespace is not null && !symbol.ContainingNamespace.IsGlobalNamespace)
-            BuildNamespaceHierarchy(symbol.ContainingNamespace, declarations);
+        var sourceText = generate(symbol);
+        context.AddSource($"{symbol.FullyQualifiedName}.g.cs", sourceText);
     }
 }

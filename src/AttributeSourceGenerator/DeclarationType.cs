@@ -1,4 +1,6 @@
-﻿namespace AttributeSourceGenerator;
+﻿// ReSharper disable CheckNamespace
+
+namespace AttributeSourceGenerator;
 
 /// <summary>Specifies the kind of declaration.</summary>
 public enum DeclarationType
