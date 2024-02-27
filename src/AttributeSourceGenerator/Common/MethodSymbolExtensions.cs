@@ -8,9 +8,12 @@ internal static class MethodSymbolExtensions
 {
     /// <summary>Gets the generic type parameters for the given method symbol.</summary>
     /// <param name="symbol">The <see cref="IMethodSymbol" /> to get the type parameters for.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>An <see cref="EquatableReadOnlyList{T}" /> of strings representing the generic type parameter names.</returns>
-    public static EquatableReadOnlyList<string> GetGenericTypeParameters(this IMethodSymbol symbol)
+    public static EquatableReadOnlyList<string> GetGenericTypeParameters(this IMethodSymbol symbol, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (!symbol.IsGenericMethod)
             return EquatableReadOnlyList<string>.Empty;
 
@@ -29,9 +32,12 @@ internal static class MethodSymbolExtensions
 
     /// <summary>Gets a list of constructor parameters for the given method symbol.</summary>
     /// <param name="symbol">The <see cref="IMethodSymbol" /> to get the type parameters for.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>An <see cref="EquatableReadOnlyList{T}" /> of strings representing the constructor parameters.</returns>
-    public static EquatableReadOnlyList<ConstructorParameter> GetConstructorParameters(this IMethodSymbol symbol)
+    public static EquatableReadOnlyList<ConstructorParameter> GetConstructorParameters(this IMethodSymbol symbol, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (symbol.Parameters.Length <= 0)
             return EquatableReadOnlyList<ConstructorParameter>.Empty;
 

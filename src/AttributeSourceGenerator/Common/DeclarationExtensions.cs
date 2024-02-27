@@ -1,11 +1,10 @@
 ﻿using System.Text;
-using AttributeSourceGenerator.Common;
 using AttributeSourceGenerator.Models;
 
-namespace AttributeSourceGenerator;
+namespace AttributeSourceGenerator.Common;
 
 /// <summary>Provides extension methods for working with declarations.</summary>
-public static class DeclarationExtensions
+internal static class DeclarationExtensions
 {
     /// <summary>Converts a list of declarations to their corresponding namespace.</summary>
     /// <param name="declarations">The list of declarations to convert.</param>

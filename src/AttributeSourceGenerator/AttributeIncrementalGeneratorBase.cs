@@ -36,7 +36,9 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(initializationContext => AddSource(initializationContext, _configuration.AttributeFullyQualifiedName, _configuration.AttributeSource));
 
-        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.AttributeFullyQualifiedName, (syntaxNode, _) => Filter(syntaxNode, _configuration.SymbolFilter), (syntaxContext, _) => Transform(syntaxContext));
+        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.AttributeFullyQualifiedName,
+            (syntaxNode, cancellationToken) => Filter(syntaxNode, _configuration.SymbolFilter, cancellationToken),
+            (syntaxContext, cancellationToken) => Transform(syntaxContext, cancellationToken));
 
         context.RegisterSourceOutput(pipeline, (productionContext, symbol) => GenerateSourceForSymbol(productionContext, symbol, _configuration.SourceGenerator));
     }
@@ -54,9 +56,12 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     /// <summary>Determines whether a syntax node should be included based on the filter settings.</summary>
     /// <param name="syntaxNode">The syntax node to filter.</param>
     /// <param name="filterType">The filter configuration.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns><see langword="true" /> if the syntax node should be included, otherwise <see langword="false" />.</returns>
-    private static bool Filter(SyntaxNode syntaxNode, FilterType filterType)
+    private static bool Filter(SyntaxNode syntaxNode, FilterType filterType, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var filter = filterType == FilterType.None ? FilterType.All : filterType;
 
         if (filter.HasFlag(FilterType.Interface) && syntaxNode is InterfaceDeclarationSyntax)
@@ -77,16 +82,19 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
 
     /// <summary>Transforms a generator attribute syntax context into a symbol for source generation.</summary>
     /// <param name="context">The generator attribute syntax context.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The transformed symbol.</returns>
-    private static Symbol Transform(GeneratorAttributeSyntaxContext context)
+    private static Symbol Transform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var targetSymbol = context.TargetSymbol;
         if (targetSymbol is not INamedTypeSymbol && targetSymbol is not IMethodSymbol)
             throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly tried to transform a {nameof(context.TargetSymbol)} that was not an {nameof(INamedTypeSymbol)} or a {nameof(IMethodSymbol)}.");
 
-        var markerAttribute = context.GetMarkerAttribute();
-        var containingDeclarations = targetSymbol.GetContainingDeclarations();
-        var symbolType = targetSymbol.GetSymbolType();
+        var markerAttribute = context.GetMarkerAttribute(cancellationToken);
+        var containingDeclarations = targetSymbol.GetContainingDeclarations(cancellationToken);
+        var symbolType = targetSymbol.GetSymbolType(cancellationToken);
         var symbolName = targetSymbol.Name;
         EquatableReadOnlyList<string> genericTypeParameters;
         EquatableReadOnlyList<ConstructorParameter> constructorParameters;
@@ -94,13 +102,13 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
         switch (targetSymbol)
         {
             case INamedTypeSymbol namedTypeSymbol:
-                genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters();
+                genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters(cancellationToken);
                 constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
                 returnType = "";
                 break;
             case IMethodSymbol methodSymbol:
-                genericTypeParameters = methodSymbol.GetGenericTypeParameters();
-                constructorParameters = methodSymbol.GetConstructorParameters();
+                genericTypeParameters = methodSymbol.GetGenericTypeParameters(cancellationToken);
+                constructorParameters = methodSymbol.GetConstructorParameters(cancellationToken);
                 returnType = methodSymbol.ReturnType.ToDisplayString();
                 break;
             default:

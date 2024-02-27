@@ -12,7 +12,7 @@ public readonly record struct Symbol
     /// <summary>Gets a read-only list of the declarations that contain this symbol.
     /// <remarks>The list is populated in order, from the outer declaration furthest away to the symbol towards the inner declaration closest to the symbol.</remarks>
     /// </summary>
-    public EquatableReadOnlyList<Declaration> ContainingDeclarations { get; init; }
+    public EquatableReadOnlyList<Declaration> ContainingDeclarations { get; }
 
     /// <summary>Gets the type of symbol.</summary>
     public SymbolType SymbolType { get; }
@@ -40,6 +40,7 @@ public readonly record struct Symbol
                 return name;
 
             var path = ContainingDeclarations.ToFullyQualifiedName();
+
             return $"{path}.{name}";
         }
     }
@@ -53,6 +54,7 @@ public readonly record struct Symbol
                 return "";
 
             var ns = ContainingDeclarations.ToNamespace();
+
             return ns;
         }
     }

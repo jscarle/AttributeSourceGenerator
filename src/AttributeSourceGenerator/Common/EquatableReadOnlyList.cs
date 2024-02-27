@@ -1,6 +1,4 @@
-﻿// ReSharper disable CheckNamespace
-
-namespace AttributeSourceGenerator.Common;
+﻿namespace AttributeSourceGenerator.Common;
 
 /// <summary>Provides extension methods to convert various collections to an <see cref="EquatableReadOnlyList{T}" />.</summary>
 internal static class EquatableReadOnlyList

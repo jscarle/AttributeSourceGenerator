@@ -1,6 +1,4 @@
-﻿// ReSharper disable CheckNamespace
-
-namespace AttributeSourceGenerator;
+﻿namespace AttributeSourceGenerator;
 
 /// <summary>Specifies the kind of filter.</summary>
 [Flags]
@@ -26,7 +24,7 @@ public enum FilterType
 
     /// <summary>Only filter for attributes that are attached to methods.</summary>
     Method = 32,
-    
+
     /// <summary>Filter for all supported attributes.</summary>
     All = Interface | Class | Record | Struct | RecordStruct | Method
 }

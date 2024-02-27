@@ -1,6 +1,4 @@
-﻿// ReSharper disable CheckNamespace
-
-namespace AttributeSourceGenerator.Models;
+﻿namespace AttributeSourceGenerator.Models;
 
 /// <summary>Represents a constructor parameter</summary>
 public readonly record struct ConstructorParameter

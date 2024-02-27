@@ -1,6 +1,4 @@
-﻿// ReSharper disable CheckNamespace
-
-namespace AttributeSourceGenerator;
+﻿namespace AttributeSourceGenerator;
 
 /// <summary>Defines the configuration for an incremental attribute generator.</summary>
 public sealed class AttributeIncrementalGeneratorConfiguration

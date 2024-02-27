@@ -1,6 +1,4 @@
-﻿// ReSharper disable CheckNamespace
-
-namespace AttributeSourceGenerator;
+﻿namespace AttributeSourceGenerator;
 
 /// <summary>Specifies the type of symbol.</summary>
 public enum SymbolType
