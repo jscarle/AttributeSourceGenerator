@@ -26,11 +26,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\NamedArgument.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AttributeIncrementalGeneratorBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AttributeIncrementalGeneratorConfiguration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AttributeIncrementalGeneratorOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeclarationType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FilterType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Symbol.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SymbolType.cs" />
-    <None Include="$(MSBuildThisFileDirectory)AttributeSourceGenerator.props" />
   </ItemGroup>
 </Project>

@@ -36,11 +36,8 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(AddMarkerAttributeSource);
 
-        //var optionsProvider = GetGeneratorOptions(context);
-        //context.RegisterSourceOutput(optionsProvider, AddMarkerAttributeSource);
-
         var syntaxProvider = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.MarkerAttributeName, Filter, Transform);
-        context.RegisterSourceOutput(syntaxProvider, (productionContext, symbol) => GenerateSourceForSymbol(productionContext, symbol));
+        context.RegisterSourceOutput(syntaxProvider, GenerateSourceForSymbol);
     }
 
     /// <summary>Adds the marker attribute source to the output.</summary>
@@ -49,39 +46,6 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     {
         if (_configuration.MarkerAttributeSource?.Length > 0)
             context.AddSource($"{_configuration.MarkerAttributeName}.g.cs", SourceText.From(_configuration.MarkerAttributeSource, Encoding.UTF8));
-    }
-
-    /// <summary>Adds the marker attribute source to the output.</summary>
-    /// <param name="context">The source production context.</param>
-    /// <param name="options">The source generator options.</param>
-    private void AddMarkerAttributeSource(SourceProductionContext context, AttributeIncrementalGeneratorOptions options)
-    {
-        if (options.IncludeMarkerAttributeSource && _configuration.MarkerAttributeSource?.Length > 0)
-            context.AddSource($"{_configuration.MarkerAttributeName}.g.cs", SourceText.From(_configuration.MarkerAttributeSource, Encoding.UTF8));
-    }
-
-    /// <summary>Retrieves the generator options based on the provided context.</summary>
-    /// <param name="context">The incremental generator initialization context.</param>
-    /// <returns>An <see cref="IncrementalValueProvider{T}" /> for the generator options.</returns>
-    private static IncrementalValueProvider<AttributeIncrementalGeneratorOptions> GetGeneratorOptions(IncrementalGeneratorInitializationContext context)
-    {
-        return context.AnalyzerConfigOptionsProvider.Select((options, cancellationToken) =>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            options.GlobalOptions.TryGetValue("build_property.IncludeMarkerAttributeSource", out var value);
-            var includeMarkerAttributeSource = IsTrue(value);
-
-            return new AttributeIncrementalGeneratorOptions { IncludeMarkerAttributeSource = includeMarkerAttributeSource };
-        });
-    }
-
-    /// <summary>Determines whether the provided property value represents a true state.</summary>
-    /// <param name="propertyValue">The property value to evaluate.</param>
-    /// <returns><c>true</c> if the property value is null, empty, or case-insensitive "true"; otherwise, <c>false</c>.</returns>
-    private static bool IsTrue(string? propertyValue)
-    {
-        return string.IsNullOrWhiteSpace(propertyValue) || StringComparer.InvariantCultureIgnoreCase.Equals("true", propertyValue);
     }
 
     /// <summary>Determines whether a syntax node should be included based on the filter settings.</summary>
