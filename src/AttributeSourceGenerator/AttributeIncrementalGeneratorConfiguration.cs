@@ -3,11 +3,11 @@
 /// <summary>Defines the configuration for an incremental attribute generator.</summary>
 public sealed class AttributeIncrementalGeneratorConfiguration
 {
-    /// <summary>The fully qualified name of the attribute.</summary>
-    public required string AttributeFullyQualifiedName { get; init; }
+    /// <summary>The fully qualified name of the marker attribute.</summary>
+    public required string MarkerAttributeName { get; init; }
 
-    /// <summary>The source for the attribute.</summary>
-    public string? AttributeSource { get; init; }
+    /// <summary>The source for the marker attribute.</summary>
+    public string? MarkerAttributeSource { get; init; }
 
     /// <summary>The filter to apply to symbols.</summary>
     public FilterType SymbolFilter { get; init; } = FilterType.All;

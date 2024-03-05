@@ -34,35 +34,65 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     /// <param name="context">The initialization context.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(initializationContext => AddSource(initializationContext, _configuration.AttributeFullyQualifiedName, _configuration.AttributeSource));
+        context.RegisterPostInitializationOutput(AddMarkerAttributeSource);
 
-        var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.AttributeFullyQualifiedName,
-            (syntaxNode, cancellationToken) => Filter(syntaxNode, _configuration.SymbolFilter, cancellationToken),
-            (syntaxContext, cancellationToken) => Transform(syntaxContext, cancellationToken));
+        //var optionsProvider = GetGeneratorOptions(context);
+        //context.RegisterSourceOutput(optionsProvider, AddMarkerAttributeSource);
 
-        context.RegisterSourceOutput(pipeline, (productionContext, symbol) => GenerateSourceForSymbol(productionContext, symbol, _configuration.SourceGenerator));
+        var syntaxProvider = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.MarkerAttributeName, Filter, Transform);
+        context.RegisterSourceOutput(syntaxProvider, (productionContext, symbol) => GenerateSourceForSymbol(productionContext, symbol));
     }
 
-    /// <summary>Adds a source file to the output.</summary>
+    /// <summary>Adds the marker attribute source to the output.</summary>
     /// <param name="context">The post-initialization context.</param>
-    /// <param name="name">The name of the source file.</param>
-    /// <param name="source">The source code for the file.</param>
-    private static void AddSource(IncrementalGeneratorPostInitializationContext context, string name, string? source)
+    private void AddMarkerAttributeSource(IncrementalGeneratorPostInitializationContext context)
     {
-        if (source?.Length > 0)
-            context.AddSource($"{name}.g.cs", SourceText.From(source, Encoding.UTF8));
+        if (_configuration.MarkerAttributeSource?.Length > 0)
+            context.AddSource($"{_configuration.MarkerAttributeName}.g.cs", SourceText.From(_configuration.MarkerAttributeSource, Encoding.UTF8));
+    }
+
+    /// <summary>Adds the marker attribute source to the output.</summary>
+    /// <param name="context">The source production context.</param>
+    /// <param name="options">The source generator options.</param>
+    private void AddMarkerAttributeSource(SourceProductionContext context, AttributeIncrementalGeneratorOptions options)
+    {
+        if (options.IncludeMarkerAttributeSource && _configuration.MarkerAttributeSource?.Length > 0)
+            context.AddSource($"{_configuration.MarkerAttributeName}.g.cs", SourceText.From(_configuration.MarkerAttributeSource, Encoding.UTF8));
+    }
+
+    /// <summary>Retrieves the generator options based on the provided context.</summary>
+    /// <param name="context">The incremental generator initialization context.</param>
+    /// <returns>An <see cref="IncrementalValueProvider{T}" /> for the generator options.</returns>
+    private static IncrementalValueProvider<AttributeIncrementalGeneratorOptions> GetGeneratorOptions(IncrementalGeneratorInitializationContext context)
+    {
+        return context.AnalyzerConfigOptionsProvider.Select((options, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            options.GlobalOptions.TryGetValue("build_property.IncludeMarkerAttributeSource", out var value);
+            var includeMarkerAttributeSource = IsTrue(value);
+
+            return new AttributeIncrementalGeneratorOptions { IncludeMarkerAttributeSource = includeMarkerAttributeSource };
+        });
+    }
+
+    /// <summary>Determines whether the provided property value represents a true state.</summary>
+    /// <param name="propertyValue">The property value to evaluate.</param>
+    /// <returns><c>true</c> if the property value is null, empty, or case-insensitive "true"; otherwise, <c>false</c>.</returns>
+    private static bool IsTrue(string? propertyValue)
+    {
+        return string.IsNullOrWhiteSpace(propertyValue) || StringComparer.InvariantCultureIgnoreCase.Equals("true", propertyValue);
     }
 
     /// <summary>Determines whether a syntax node should be included based on the filter settings.</summary>
     /// <param name="syntaxNode">The syntax node to filter.</param>
-    /// <param name="filterType">The filter configuration.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns><see langword="true" /> if the syntax node should be included, otherwise <see langword="false" />.</returns>
-    private static bool Filter(SyntaxNode syntaxNode, FilterType filterType, CancellationToken cancellationToken)
+    private bool Filter(SyntaxNode syntaxNode, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var filter = filterType == FilterType.None ? FilterType.All : filterType;
+        var filter = _configuration.SymbolFilter == FilterType.None ? FilterType.All : _configuration.SymbolFilter;
 
         if (filter.HasFlag(FilterType.Interface) && syntaxNode is InterfaceDeclarationSyntax)
             return true;
@@ -97,23 +127,35 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
         var symbolType = targetSymbol.GetSymbolType(cancellationToken);
         var symbolName = targetSymbol.Name;
         EquatableReadOnlyList<string> genericTypeParameters;
-        EquatableReadOnlyList<ConstructorParameter> constructorParameters;
+        EquatableReadOnlyList<MethodParameter> constructorParameters;
         string returnType;
         switch (targetSymbol)
         {
             case INamedTypeSymbol namedTypeSymbol:
                 genericTypeParameters = namedTypeSymbol.GetGenericTypeParameters(cancellationToken);
-                constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
+                constructorParameters = EquatableReadOnlyList<MethodParameter>.Empty;
                 returnType = "";
+                /*
+                TODO: Analyze members.
+                var members = namedTypeSymbol.GetMembers();
+                foreach (var member in members)
+                    switch (member)
+                    {
+                        case IPropertySymbol propertySymbol:
+                            break;
+                        case IMethodSymbol methodSymbol:
+                            break;
+                    }
+                */
                 break;
             case IMethodSymbol methodSymbol:
                 genericTypeParameters = methodSymbol.GetGenericTypeParameters(cancellationToken);
-                constructorParameters = methodSymbol.GetConstructorParameters(cancellationToken);
+                constructorParameters = methodSymbol.GetMethodParameters(cancellationToken);
                 returnType = methodSymbol.ReturnType.ToDisplayString();
                 break;
             default:
                 genericTypeParameters = EquatableReadOnlyList<string>.Empty;
-                constructorParameters = EquatableReadOnlyList<ConstructorParameter>.Empty;
+                constructorParameters = EquatableReadOnlyList<MethodParameter>.Empty;
                 returnType = "";
                 break;
         }
@@ -126,10 +168,9 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     /// <summary>Generates source code for a given symbol.</summary>
     /// <param name="context">The source production context.</param>
     /// <param name="symbol">The symbol to generate source for.</param>
-    /// <param name="generate">A function that generates the source code for a symbol.</param>
-    private static void GenerateSourceForSymbol(SourceProductionContext context, Symbol symbol, Func<Symbol, string> generate)
+    private void GenerateSourceForSymbol(SourceProductionContext context, Symbol symbol)
     {
-        var sourceText = generate(symbol);
+        var sourceText = _configuration.SourceGenerator(symbol);
         context.AddSource($"{symbol.FullyQualifiedName}.g.cs", sourceText);
     }
 }

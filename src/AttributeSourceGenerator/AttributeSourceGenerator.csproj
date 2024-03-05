@@ -33,6 +33,7 @@
     <ItemGroup>
         <None Remove="AttributeSourceGenerator.shproj"/>
         <None Remove="AttributeSourceGenerator.projitems"/>
+        <None Include="AttributeSourceGenerator.props" Pack="true" PackagePath="build" Visible="false"/>
     </ItemGroup>
 
     <ItemGroup>

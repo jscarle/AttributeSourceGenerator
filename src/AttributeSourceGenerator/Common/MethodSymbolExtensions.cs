@@ -30,31 +30,31 @@ internal static class MethodSymbolExtensions
         return genericTypeParameters.ToEquatableReadOnlyList();
     }
 
-    /// <summary>Gets a list of constructor parameters for the given method symbol.</summary>
+    /// <summary>Gets a list of method parameters for the given method symbol.</summary>
     /// <param name="symbol">The <see cref="IMethodSymbol" /> to get the type parameters for.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>An <see cref="EquatableReadOnlyList{T}" /> of strings representing the constructor parameters.</returns>
-    public static EquatableReadOnlyList<ConstructorParameter> GetConstructorParameters(this IMethodSymbol symbol, CancellationToken cancellationToken)
+    /// <returns>An <see cref="EquatableReadOnlyList{T}" /> of strings representing the method parameters.</returns>
+    public static EquatableReadOnlyList<MethodParameter> GetMethodParameters(this IMethodSymbol symbol, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (symbol.Parameters.Length <= 0)
-            return EquatableReadOnlyList<ConstructorParameter>.Empty;
+            return EquatableReadOnlyList<MethodParameter>.Empty;
 
-        var constructorParameters = new List<ConstructorParameter>();
+        var methodParameters = new List<MethodParameter>();
 
         // ReSharper disable once ForCanBeConvertedToForeach
         // ReSharper disable once LoopCanBeConvertedToQuery
         for (var index = 0; index < symbol.Parameters.Length; index++)
         {
-            var constructorParameterSymbol = symbol.Parameters[index];
-            var type = constructorParameterSymbol.Type.ToDisplayString();
-            var name = constructorParameterSymbol.Name;
-            var constructorParameter = new ConstructorParameter(type, name);
+            var methodParameterSymbol = symbol.Parameters[index];
+            var type = methodParameterSymbol.Type.ToDisplayString();
+            var name = methodParameterSymbol.Name;
+            var methodParameter = new MethodParameter(type, name);
 
-            constructorParameters.Add(constructorParameter);
+            methodParameters.Add(methodParameter);
         }
 
-        return constructorParameters.ToEquatableReadOnlyList();
+        return methodParameters.ToEquatableReadOnlyList();
     }
 }
