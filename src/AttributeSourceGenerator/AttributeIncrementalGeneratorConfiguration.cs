@@ -1,4 +1,6 @@
-﻿namespace AttributeSourceGenerator;
+﻿using System.Collections.Immutable;
+
+namespace AttributeSourceGenerator;
 
 /// <summary>Defines the configuration for an incremental attribute generator.</summary>
 public sealed class AttributeIncrementalGeneratorConfiguration
@@ -13,7 +15,7 @@ public sealed class AttributeIncrementalGeneratorConfiguration
     public FilterType SymbolFilter { get; init; } = FilterType.All;
 
     /// <summary>The function that generates the source code for the attribute.</summary>
-    public required Func<Symbol, IEnumerable<Source>> SourceGenerator { get; init; }
+    public required Func<ImmutableArray<Symbol>, IEnumerable<Source>> SourceGenerator { get; init; }
 
     /// <summary>Initializes a new instance of the <see cref="AttributeIncrementalGeneratorConfiguration" /> class</summary>
     public AttributeIncrementalGeneratorConfiguration()

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 using AttributeSourceGenerator.Common;
 using AttributeSourceGenerator.Models;
 using Microsoft.CodeAnalysis;
@@ -36,8 +37,8 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(AddMarkerAttributeSource);
 
-        var syntaxProvider = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.MarkerAttributeName, Filter, Transform);
-        context.RegisterSourceOutput(syntaxProvider, GenerateSourceForSymbol);
+        var syntaxProvider = context.SyntaxProvider.ForAttributeWithMetadataName(_configuration.MarkerAttributeName, Filter, Transform).Collect();
+        context.RegisterSourceOutput(syntaxProvider, GenerateSourceForSymbols);
     }
 
     /// <summary>Adds the marker attribute source to the output.</summary>
@@ -129,12 +130,12 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
         return symbol;
     }
 
-    /// <summary>Generates source code for a given symbol.</summary>
+    /// <summary>Generates source for the given symbols.</summary>
     /// <param name="context">The source production context.</param>
-    /// <param name="symbol">The symbol to generate source for.</param>
-    private void GenerateSourceForSymbol(SourceProductionContext context, Symbol symbol)
+    /// <param name="symbols">The symbols to generate source for.</param>
+    private void GenerateSourceForSymbols(SourceProductionContext context, ImmutableArray<Symbol> symbols)
     {
-        var sources = _configuration.SourceGenerator(symbol);
+        var sources = _configuration.SourceGenerator(symbols);
         foreach (var source in sources)
             context.AddSource($"{source.Name}.g.cs", source.Text);
     }
