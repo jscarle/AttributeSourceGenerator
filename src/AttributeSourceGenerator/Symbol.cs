@@ -1,8 +1,6 @@
 ﻿using AttributeSourceGenerator.Common;
 using AttributeSourceGenerator.Models;
 
-// ReSharper disable CheckNamespace
-
 namespace AttributeSourceGenerator;
 
 /// <summary>Represents a symbol.</summary>
@@ -14,7 +12,7 @@ public readonly record struct Symbol
     /// <summary>Gets a read-only list of the declarations that contain this symbol.
     /// <remarks>The list is populated in order, from the outer declaration furthest away to the symbol towards the inner declaration closest to the symbol.</remarks>
     /// </summary>
-    public EquatableReadOnlyList<Declaration> ContainingDeclarations { get; init; }
+    public EquatableReadOnlyList<Declaration> ContainingDeclarations { get; }
 
     /// <summary>Gets the type of symbol.</summary>
     public SymbolType SymbolType { get; }
@@ -25,8 +23,8 @@ public readonly record struct Symbol
     /// <summary>Gets a read-only list of generic parameters for generic symbols, or an empty list otherwise.</summary>
     public EquatableReadOnlyList<string> GenericTypeParameters { get; }
 
-    /// <summary>Gets a read-only list of constructor parameters for method symbols, or an empty list otherwise.</summary>
-    public EquatableReadOnlyList<ConstructorParameter> ConstructorParameters { get; }
+    /// <summary>Gets a read-only list of method parameters for method symbols, or an empty list otherwise.</summary>
+    public EquatableReadOnlyList<MethodParameter> MethodParameters { get; }
 
     /// <summary>Gets the return type for method symbols, or an empty string otherwise.</summary>
     public string ReturnType { get; }
@@ -42,6 +40,7 @@ public readonly record struct Symbol
                 return name;
 
             var path = ContainingDeclarations.ToFullyQualifiedName();
+
             return $"{path}.{name}";
         }
     }
@@ -55,6 +54,7 @@ public readonly record struct Symbol
                 return "";
 
             var ns = ContainingDeclarations.ToNamespace();
+
             return ns;
         }
     }
@@ -65,17 +65,17 @@ public readonly record struct Symbol
     /// <param name="symbolType">The type of symbol.</param>
     /// <param name="name">The name of the symbol.</param>
     /// <param name="genericTypeParameters">The list of the generic parameters for the symbol.</param>
-    /// <param name="constructorParameters">The list of the constructor parameters for the symbol.</param>
+    /// <param name="methodParameters">The list of the method parameters for the symbol.</param>
     /// <param name="returnType">The return type for the symbol.</param>
     internal Symbol(MarkerAttributeData markerAttribute, EquatableReadOnlyList<Declaration> containingDeclarations, SymbolType symbolType, string name, EquatableReadOnlyList<string> genericTypeParameters,
-        EquatableReadOnlyList<ConstructorParameter> constructorParameters, string returnType)
+        EquatableReadOnlyList<MethodParameter> methodParameters, string returnType)
     {
         MarkerAttribute = markerAttribute;
         ContainingDeclarations = containingDeclarations;
         SymbolType = symbolType;
         Name = name;
         GenericTypeParameters = genericTypeParameters;
-        ConstructorParameters = constructorParameters;
+        MethodParameters = methodParameters;
         ReturnType = returnType;
     }
 
@@ -85,17 +85,17 @@ public readonly record struct Symbol
     /// <param name="symbolType">The type of symbol.</param>
     /// <param name="name">Receives the name of the symbol.</param>
     /// <param name="genericParameters">Receives the read-only list of the generic parameters for the symbol.</param>
-    /// <param name="constructorParameters">Receives the read-only list of the constructor parameters for the symbol.</param>
+    /// <param name="methodParameters">Receives the read-only list of the method parameters for the symbol.</param>
     /// <param name="returnType">Receives the return type for the symbol.</param>
     public void Deconstruct(out MarkerAttributeData markerAttribute, out EquatableReadOnlyList<Declaration> containingDeclarations, out SymbolType symbolType, out string name, out EquatableReadOnlyList<string> genericParameters,
-        out EquatableReadOnlyList<ConstructorParameter> constructorParameters, out string returnType)
+        out EquatableReadOnlyList<MethodParameter> methodParameters, out string returnType)
     {
         markerAttribute = MarkerAttribute;
         containingDeclarations = ContainingDeclarations;
         symbolType = SymbolType;
         name = Name;
         genericParameters = GenericTypeParameters;
-        constructorParameters = ConstructorParameters;
+        methodParameters = MethodParameters;
         returnType = ReturnType;
     }
 }

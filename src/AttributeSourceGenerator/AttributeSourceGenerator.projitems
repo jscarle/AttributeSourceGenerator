@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>dfd4aa47-b465-4c4b-930c-ec98d65bedc3</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>AttributeSourceGenerator</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Common\DeclarationExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\EquatableReadOnlyList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\EquatableReadOnlyList`1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\GeneratorAttributeSyntaxContextExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\MethodSymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\NamedSymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\SymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Common\TypeSymbolExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compiler\CompilerServices.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\ConstructorArgument.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\Declaration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\GenericTypeArgument.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\MarkerAttributeData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\MethodParameter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\NamedArgument.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AttributeIncrementalGeneratorBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AttributeIncrementalGeneratorConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeclarationType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FilterType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Source.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Symbol.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SymbolType.cs" />
+  </ItemGroup>
+</Project>
