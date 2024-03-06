@@ -7,13 +7,13 @@ public sealed class AttributeIncrementalGeneratorConfiguration
     public required string MarkerAttributeName { get; init; }
 
     /// <summary>The source for the marker attribute.</summary>
-    public string? MarkerAttributeSource { get; init; }
+    public Source? MarkerAttributeSource { get; init; }
 
     /// <summary>The filter to apply to symbols.</summary>
     public FilterType SymbolFilter { get; init; } = FilterType.All;
 
     /// <summary>The function that generates the source code for the attribute.</summary>
-    public required Func<Symbol, string> SourceGenerator { get; init; }
+    public required Func<Symbol, IEnumerable<Source>> SourceGenerator { get; init; }
 
     /// <summary>Initializes a new instance of the <see cref="AttributeIncrementalGeneratorConfiguration" /> class</summary>
     public AttributeIncrementalGeneratorConfiguration()

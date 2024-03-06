@@ -44,8 +44,8 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     /// <param name="context">The post-initialization context.</param>
     private void AddMarkerAttributeSource(IncrementalGeneratorPostInitializationContext context)
     {
-        if (_configuration.MarkerAttributeSource?.Length > 0)
-            context.AddSource($"{_configuration.MarkerAttributeName}.g.cs", SourceText.From(_configuration.MarkerAttributeSource, Encoding.UTF8));
+        if (_configuration.MarkerAttributeSource?.Text.Length > 0)
+            context.AddSource($"{_configuration.MarkerAttributeSource.Value.Name}.g.cs", SourceText.From(_configuration.MarkerAttributeSource.Value.Text, Encoding.UTF8));
     }
 
     /// <summary>Determines whether a syntax node should be included based on the filter settings.</summary>
@@ -85,11 +85,11 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
         var targetSymbol = context.TargetSymbol;
         if (targetSymbol is not INamedTypeSymbol && targetSymbol is not IMethodSymbol)
             throw new InvalidOperationException($"{nameof(AttributeIncrementalGeneratorBase)} unexpectedly tried to transform a {nameof(context.TargetSymbol)} that was not an {nameof(INamedTypeSymbol)} or a {nameof(IMethodSymbol)}.");
-
         var markerAttribute = context.GetMarkerAttribute(cancellationToken);
         var containingDeclarations = targetSymbol.GetContainingDeclarations(cancellationToken);
         var symbolType = targetSymbol.GetSymbolType(cancellationToken);
         var symbolName = targetSymbol.Name;
+
         EquatableReadOnlyList<string> genericTypeParameters;
         EquatableReadOnlyList<MethodParameter> constructorParameters;
         string returnType;
@@ -134,7 +134,8 @@ public abstract class AttributeIncrementalGeneratorBase : IIncrementalGenerator
     /// <param name="symbol">The symbol to generate source for.</param>
     private void GenerateSourceForSymbol(SourceProductionContext context, Symbol symbol)
     {
-        var sourceText = _configuration.SourceGenerator(symbol);
-        context.AddSource($"{symbol.FullyQualifiedName}.g.cs", sourceText);
+        var sources = _configuration.SourceGenerator(symbol);
+        foreach (var source in sources)
+            context.AddSource($"{source.Name}.g.cs", source.Text);
     }
 }
