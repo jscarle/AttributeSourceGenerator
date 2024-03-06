@@ -2,6 +2,10 @@
 
 A simple attribute-based Roslyn incremental source generator base class for .NET.
 
+[![main](https://img.shields.io/github/actions/workflow/status/jscarle/AttributeSourceGenerator/main.yml?logo=github)](https://github.com/jscarle/AttributeSourceGenerator)
+[![nuget](https://img.shields.io/nuget/v/AttributeSourceGenerator)](https://www.nuget.org/packages/AttributeSourceGenerator)
+[![downloads](https://img.shields.io/nuget/dt/AttributeSourceGenerator)](https://www.nuget.org/packages/AttributeSourceGenerator)
+
 ### Example generator
 
 ```csharp
